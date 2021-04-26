@@ -9,11 +9,16 @@ from numpy import random
 
 from models.experimental import attempt_load
 from utils.datasets import LoadStreams, LoadImages
-from utils.general import check_img_size, check_requirements, check_imshow, non_max_suppression, apply_classifier, \
-    scale_coords, xyxy2xywh, strip_optimizer, set_logging, increment_path
+from utils.general import check_img_size, check_requirements, non_max_suppression, apply_classifier, scale_coords, \
+    xyxy2xywh, strip_optimizer, set_logging, increment_path
 from utils.plots import plot_one_box
 from utils.torch_utils import select_device, load_classifier, time_synchronized
 
+def new_video(path):
+        frame = 0
+        cap = cv2.VideoCapture(path)
+        nframes = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        return nframes
 
 def detect(save_img=False):
     source, weights, view_img, save_txt, imgsz = opt.source, opt.weights, opt.view_img, opt.save_txt, opt.img_size
@@ -45,7 +50,7 @@ def detect(save_img=False):
     # Set Dataloader
     vid_path, vid_writer = None, None
     if webcam:
-        view_img = check_imshow()
+        view_img = True
         cudnn.benchmark = True  # set True to speed up constant image size inference
         dataset = LoadStreams(source, img_size=imgsz, stride=stride)
     else:
@@ -60,7 +65,8 @@ def detect(save_img=False):
     if device.type != 'cpu':
         model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters())))  # run once
     t0 = time.time()
-    for path, img, im0s, vid_cap in dataset:
+    print("path","path")
+    for path, img, im0s, vid_cap in dataset:  
         img = torch.from_numpy(img).to(device)
         img = img.half() if half else img.float()  # uint8 to fp16/32
         img /= 255.0  # 0 - 255 to 0.0 - 1.0
@@ -85,6 +91,8 @@ def detect(save_img=False):
                 p, s, im0, frame = path[i], '%g: ' % i, im0s[i].copy(), dataset.count
             else:
                 p, s, im0, frame = path, '', im0s, getattr(dataset, 'frame', 0)
+                nFrames = new_video(p)
+                # print(nFrames)
 
             p = Path(p)  # to Path
             save_path = str(save_dir / p.name)  # img.jpg
@@ -101,6 +109,17 @@ def detect(save_img=False):
                     s += f"{n} {names[int(c)]}{'s' * (n > 1)}, "  # add to string
 
                 # Write results
+                # for *xyxy, conf, cls in reversed(det):
+                #     if save_txt:  # Write to file
+                #         xywh = (xyxy2xywh(torch.tensor(xyxy).view(1, 4)) / gn).view(-1).tolist()  # normalized xywh
+                #         line = (cls, *xywh, conf) if opt.save_conf else (cls, *xywh)  # label format
+                #         with open(txt_path + '.txt', 'a') as f:
+                #             f.write(('%g ' * len(line)).rstrip() % line + '\n')
+
+                #     if save_img or view_img:  # Add bbox to image
+                #         label = f'{names[int(cls)]} {conf:.2f}'
+                #         plot_one_box(xyxy, im0, label=label, color=colors[int(cls)], line_thickness=3)
+                f.open("resFile" + '.txt', 'a') as resFile
                 for *xyxy, conf, cls in reversed(det):
                     if int(cls) == 0 :
                         startPoint= (int(xyxy[0]),int(xyxy[1]))
@@ -122,11 +141,11 @@ def detect(save_img=False):
 
             # Print time (inference + NMS)
             print(f'{s}Done. ({t2 - t1:.3f}s)')
-
+            
             # Stream results
             if view_img:
                 cv2.imshow(str(p), im0)
-                cv2.waitKey(1)  # 1 millisecond
+                cv2.waitKey(1) # 1 millisecond
 
             # Save results (image with detections)
             if save_img:
@@ -150,7 +169,7 @@ def detect(save_img=False):
         print(f"Results saved to {save_dir}{s}")
 
     print(f'Done. ({time.time() - t0:.3f}s)')
-
+    print("FPS: ", nFrames/(time.time() - t0) )
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
