@@ -65,7 +65,7 @@ def detect(save_img=False):
     if device.type != 'cpu':
         model(torch.zeros(1, 3, imgsz, imgsz).to(device).type_as(next(model.parameters())))  # run once
     t0 = time.time()
-    print("path","path")
+    
     for path, img, im0s, vid_cap in dataset:  
         img = torch.from_numpy(img).to(device)
         img = img.half() if half else img.float()  # uint8 to fp16/32
@@ -169,7 +169,7 @@ def detect(save_img=False):
         print(f"Results saved to {save_dir}{s}")
 
     print(f'Done. ({time.time() - t0:.3f}s)')
-    print("FPS: ", nFrames/(time.time() - t0) )
+    print("FPS: ", nFrames/(time.time() - t0))
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
